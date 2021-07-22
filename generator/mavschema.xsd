@@ -56,6 +56,7 @@
     </xs:restriction>
   </xs:simpleType>
 </xs:attribute>
+<xs:attribute name="encryption" type="xs:boolean"/> <!-- used in field elements -->
 <xs:attribute name="since"> <!-- used in deprecated elements -->
   <xs:simpleType>
     <xs:restriction base="xs:string">
