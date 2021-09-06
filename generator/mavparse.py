@@ -257,7 +257,7 @@ class MAVXML(object):
                 if units:
                     units = '[' + units + ']'
                 instance = attrs.get('instance', False)
-                encryption = attrs.get('encryption', '')
+                encryption = attrs.get('encryption', None)
                 new_field = MAVField(attrs['name'], attrs['type'], print_format, self, enum=enum, display=display, units=units, instance=instance, encryption=encryption)
                 if self.message[-1].extensions_start is None or self.allow_extensions:
                     self.message[-1].fields.append(new_field)
