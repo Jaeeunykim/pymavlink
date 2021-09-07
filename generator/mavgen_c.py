@@ -199,14 +199,14 @@ ${{array_fields:#define MAVLINK_MSG_${msg_name}_FIELD_${name_upper}_LEN ${array_
     ${id}, \\
     "${name}", \\
     ${num_fields}, \\
-    { ${{fields: { "${name}", ${c_print_format}, MAVLINK_TYPE_${type_upper}, ${array_length}, ${wire_offset}, offsetof(mavlink_${name_lower}_t, ${name}) }, \\
+    { ${{fields: { "${name}"${encryption}, ${c_print_format}, MAVLINK_TYPE_${type_upper}, ${array_length}, ${wire_offset}, offsetof(mavlink_${name_lower}_t, ${name}) }, \\
         }} } \\
 }
 #else
 #define MAVLINK_MESSAGE_INFO_${name} { \\
     "${name}", \\
     ${num_fields}, \\
-    { ${{fields: { "${name}", ${c_print_format}, MAVLINK_TYPE_${type_upper}, ${array_length}, ${wire_offset}, offsetof(mavlink_${name_lower}_t, ${name}) }, \\
+    { ${{fields: { "${name}"${encryption}, ${c_print_format}, MAVLINK_TYPE_${type_upper}, ${array_length}, ${wire_offset}, offsetof(mavlink_${name_lower}_t, ${name}) }, \\
         }} } \\
 }
 #endif
@@ -226,7 +226,7 @@ static inline uint16_t mavlink_msg_${name_lower}_pack(uint8_t system_id, uint8_t
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_${name}_LEN];
-${{scalar_fields:    _mav_put_${type}(buf, ${wire_offset}, ${putname});
+${{scalar_fields:    _mav_put_${type}(buf, ${wire_offset}, ${putname} ${encryption});
 }}
 ${{array_fields:    _mav_put_${type}_array(buf, ${wire_offset}, ${name}, ${array_length});
 }}
@@ -633,8 +633,11 @@ def generate_one(basename, xml):
         else:
             m.crc_extra_arg = ""
         for f in m.fields:
-            if f.encryption:
-                print("!!!!!!! found encryption attribue !!!!!!!")
+            if f.encryption is None:
+                f.encryption = ''
+            else:
+                f.encryption = ', jaeeuny you are the best lol'       
+                # f.encryption = ', %s' % f.encryption
             if f.print_format is None:
                 f.c_print_format = 'NULL'
             else:

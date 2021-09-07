@@ -33,7 +33,7 @@ class MAVParseError(Exception):
         return self.message
 
 class MAVField(object):
-    def __init__(self, name, type, print_format, xml, description='', enum='', display='', units='', instance=False, encryption = ''):
+    def __init__(self, name, type, encryption, print_format, xml, description='', enum='', display='', units='', instance=False):
         self.name = name
         self.name_upper = name.upper()
         self.description = description
@@ -43,9 +43,9 @@ class MAVField(object):
         self.units = units
         self.omit_arg = False
         self.const_value = None
+        self.encryption = encryption
         self.print_format = print_format
         self.instance = instance
-        self.encryption = encryption
         lengths = {
         'float'    : 4,
         'double'   : 8,
@@ -250,6 +250,7 @@ class MAVXML(object):
                 self.message[-1].extensions_start = len(self.message[-1].fields)
             elif in_element == "mavlink.messages.message.field":
                 check_attrs(attrs, ['name', 'type'], 'field')
+                encryption = attrs.get('encryption', None)  
                 print_format = attrs.get('print_format', None)
                 enum = attrs.get('enum', '')
                 display = attrs.get('display', '')
@@ -257,8 +258,7 @@ class MAVXML(object):
                 if units:
                     units = '[' + units + ']'
                 instance = attrs.get('instance', False)
-                encryption = attrs.get('encryption', None)
-                new_field = MAVField(attrs['name'], attrs['type'], print_format, self, enum=enum, display=display, units=units, instance=instance, encryption=encryption)
+                new_field = MAVField(attrs['name'], attrs['type'], encryption, print_format, self, enum=enum, display=display, units=units, instance=instance)
                 if self.message[-1].extensions_start is None or self.allow_extensions:
                     self.message[-1].fields.append(new_field)
             elif in_element == "mavlink.enums.enum":
