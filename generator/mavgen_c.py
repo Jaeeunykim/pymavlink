@@ -16,6 +16,8 @@ from . import mavparse, mavtemplate
 
 t = mavtemplate.MAVTemplate()
 
+fpe_encryption = ''
+
 def generate_version_h(directory, xml):
     '''generate version.h'''
     f = open(os.path.join(directory, "version.h"), mode='w')
@@ -226,7 +228,7 @@ static inline uint16_t mavlink_msg_${name_lower}_pack(uint8_t system_id, uint8_t
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_${name}_LEN];
-${{scalar_fields:    _mav_put_${type}(buf, ${wire_offset}, ${putname} ${encryption});
+${{scalar_fields:    _mav_put_${type}(buf, ${wire_offset}, ${fpe_encryption});
 }}
 ${{array_fields:    _mav_put_${type}_array(buf, ${wire_offset}, ${name}, ${array_length});
 }}
@@ -633,11 +635,6 @@ def generate_one(basename, xml):
         else:
             m.crc_extra_arg = ""
         for f in m.fields:
-            if f.encryption is None:
-                f.encryption = ''
-            else:
-                f.encryption = ', jaeeuny you are the best lol'       
-                # f.encryption = ', %s' % f.encryption
             if f.print_format is None:
                 f.c_print_format = 'NULL'
             else:
@@ -679,6 +676,14 @@ def generate_one(basename, xml):
                     f.c_test_value = "%sLL" % f.test_value                    
                 else:
                     f.c_test_value = f.test_value
+            if f.encryption is None:
+                f.encryption = ''
+                f.fpe_encryption = f.name
+            else:
+                # f.encryption = ', jaeeuny you are the best lol'       
+                # f.encryption = ', %s' % f.encryption
+                f.encryption = ', ' % f.encryption
+                f.fpe_encryption = f.type+'_pfe_encryption('+ f.name +')'
         if m.needs_pack:
             m.MAVPACKED_START = "MAVPACKED("
             m.MAVPACKED_END = ")"
