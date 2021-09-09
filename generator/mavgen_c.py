@@ -16,7 +16,7 @@ from . import mavparse, mavtemplate
 
 t = mavtemplate.MAVTemplate()
 
-fpe_encryption = ''
+encryption_fields = []
 
 def generate_version_h(directory, xml):
     '''generate version.h'''
@@ -175,6 +175,10 @@ def generate_message_h(directory, m):
     f = open(os.path.join(directory, 'mavlink_msg_%s.h' % m.name_lower), mode='w')
     t.write(f, '''
 #pragma once
+
+${{encryption_fields: extern ${type} ${type}_fpe_encryption(${type} src);
+}}
+
 // MESSAGE ${name} PACKING
 
 #define MAVLINK_MSG_ID_${name} ${id}
@@ -682,8 +686,10 @@ def generate_one(basename, xml):
             else:
                 # f.encryption = ', jaeeuny you are the best lol'       
                 # f.encryption = ', %s' % f.encryption
-                f.encryption = ', ' % f.encryption
-                f.fpe_encryption = f.type+'_pfe_encryption('+ f.name +')'
+                encryption_fields.append(f)
+                f.encryption_fields = encryption_fields
+                f.encryption = ', %s' % f.encryption
+                f.fpe_encryption = f.type+'_fpe_encryption('+ f.name +')'
         if m.needs_pack:
             m.MAVPACKED_START = "MAVPACKED("
             m.MAVPACKED_END = ")"
@@ -696,12 +702,15 @@ def generate_one(basename, xml):
         m.arg_fields = []
         m.array_fields = []
         m.scalar_fields = []
+        m.encryption_fields = []
         for f in m.ordered_fields:
             if f.array_length != 0:
                 m.array_fields.append(f)
             else:
                 m.scalar_fields.append(f)
         for f in m.fields:
+            if f.encryption:
+                m.encryption_fields.append(f)
             if not f.omit_arg:
                 m.arg_fields.append(f)
                 f.putname = f.name
