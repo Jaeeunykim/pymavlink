@@ -179,6 +179,9 @@ def generate_message_h(directory, m):
 ${{encryption_fields: extern ${type} ${type}_fpe_encryption(${type} src);
 }}
 
+${{encryption_fields: extern ${type} ${type}_fpe_decryption(${type} src);
+}}
+
 // MESSAGE ${name} PACKING
 
 #define MAVLINK_MSG_ID_${name} ${id}
@@ -266,14 +269,14 @@ static inline uint16_t mavlink_msg_${name_lower}_pack_chan(uint8_t system_id, ui
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_${name}_LEN];
-${{scalar_fields:    _mav_put_${type}(buf, ${wire_offset}, ${putname});
+${{scalar_fields:    _mav_put_${type}(buf, ${wire_offset}, ${fpe_encryption});
 }}
 ${{array_fields:    _mav_put_${type}_array(buf, ${wire_offset}, ${name}, ${array_length});
 }}
         memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_${name}_LEN);
 #else
     mavlink_${name_lower}_t packet;
-${{scalar_fields:    packet.${name} = ${putname};
+${{scalar_fields:    packet.${name} = ${fpe_encryption};
 }}
 ${{array_fields:    mav_array_memcpy(packet.${name}, ${name}, sizeof(${type})*${array_length});
 }}
@@ -324,14 +327,14 @@ static inline void mavlink_msg_${name_lower}_send(mavlink_channel_t chan,${{arg_
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_${name}_LEN];
-${{scalar_fields:    _mav_put_${type}(buf, ${wire_offset}, ${putname});
+${{scalar_fields:    _mav_put_${type}(buf, ${wire_offset}, ${fpe_encryption});
 }}
 ${{array_fields:    _mav_put_${type}_array(buf, ${wire_offset}, ${name}, ${array_length});
 }}
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_${name}, buf, MAVLINK_MSG_ID_${name}_MIN_LEN, MAVLINK_MSG_ID_${name}_LEN, MAVLINK_MSG_ID_${name}_CRC);
 #else
     mavlink_${name_lower}_t packet;
-${{scalar_fields:    packet.${name} = ${putname};
+${{scalar_fields:    packet.${name} = ${fpe_encryption};
 }}
 ${{array_fields:    mav_array_memcpy(packet.${name}, ${name}, sizeof(${type})*${array_length});
 }}
@@ -365,14 +368,14 @@ static inline void mavlink_msg_${name_lower}_send_buf(mavlink_message_t *msgbuf,
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char *buf = (char *)msgbuf;
-${{scalar_fields:    _mav_put_${type}(buf, ${wire_offset}, ${putname});
+${{scalar_fields:    _mav_put_${type}(buf, ${wire_offset}, ${fpe_encryption});
 }}
 ${{array_fields:    _mav_put_${type}_array(buf, ${wire_offset}, ${name}, ${array_length});
 }}
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_${name}, buf, MAVLINK_MSG_ID_${name}_MIN_LEN, MAVLINK_MSG_ID_${name}_LEN, MAVLINK_MSG_ID_${name}_CRC);
 #else
     mavlink_${name_lower}_t *packet = (mavlink_${name_lower}_t *)msgbuf;
-${{scalar_fields:    packet->${name} = ${putname};
+${{scalar_fields:    packet->${name} = ${fpe_encryption};
 }}
 ${{array_fields:    mav_array_memcpy(packet->${name}, ${name}, sizeof(${type})*${array_length});
 }}
@@ -413,6 +416,8 @@ ${{ordered_fields:    ${decode_left}mavlink_msg_${name_lower}_get_${name}(msg${d
         memset(${name_lower}, 0, MAVLINK_MSG_ID_${name}_LEN);
     memcpy(${name_lower}, _MAV_PAYLOAD(msg), len);
 #endif
+    ${{encryption_fields: ${decode_left}${type}_fpe_decryption(${decode_encryption_right}); 
+    }}
 }
 ''', m)
     f.close()
@@ -668,6 +673,7 @@ def generate_one(basename, xml):
                 f.array_arg = ''
                 f.array_return_arg = ''
                 f.array_const = ''
+                f.decode_encryption_right = "%s->%s" % (m.name_lower, f.name)
                 f.decode_left = "%s->%s = " % (m.name_lower, f.name)
                 f.decode_right = ''
                 f.get_arg = ''
