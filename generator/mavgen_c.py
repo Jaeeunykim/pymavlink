@@ -242,7 +242,7 @@ ${{array_fields:    _mav_put_${type}_array(buf, ${wire_offset}, ${name}, ${array
         memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_${name}_LEN);
 #else
     mavlink_${name_lower}_t packet;
-${{scalar_fields:    packet.${name} = ${putname};
+${{scalar_fields:    packet.${name} = ${fpe_encryption};
 }}
 ${{array_fields:    mav_array_memcpy(packet.${name}, ${name}, sizeof(${type})*${array_length});
 }}
