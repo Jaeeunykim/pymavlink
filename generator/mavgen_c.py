@@ -208,14 +208,14 @@ ${{array_fields:#define MAVLINK_MSG_${msg_name}_FIELD_${name_upper}_LEN ${array_
     ${id}, \\
     "${name}", \\
     ${num_fields}, \\
-    { ${{fields: { "${name}"${encryption}, ${c_print_format}, MAVLINK_TYPE_${type_upper}, ${array_length}, ${wire_offset}, offsetof(mavlink_${name_lower}_t, ${name}) }, \\
+    { ${{fields: { "${name}", ${c_print_format}, MAVLINK_TYPE_${type_upper}, ${array_length}, ${wire_offset}, offsetof(mavlink_${name_lower}_t, ${name}) }, \\
         }} } \\
 }
 #else
 #define MAVLINK_MESSAGE_INFO_${name} { \\
     "${name}", \\
     ${num_fields}, \\
-    { ${{fields: { "${name}"${encryption}, ${c_print_format}, MAVLINK_TYPE_${type_upper}, ${array_length}, ${wire_offset}, offsetof(mavlink_${name_lower}_t, ${name}) }, \\
+    { ${{fields: { "${name}", ${c_print_format}, MAVLINK_TYPE_${type_upper}, ${array_length}, ${wire_offset}, offsetof(mavlink_${name_lower}_t, ${name}) }, \\
         }} } \\
 }
 #endif
@@ -352,6 +352,8 @@ static inline void mavlink_msg_${name_lower}_send_struct(mavlink_channel_t chan,
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     mavlink_msg_${name_lower}_send(chan,${{arg_fields: ${name_lower}->${name},}});
 #else
+    ${{encryption_fields: ${decode_left}${type}_fpe_encryption(${decode_encryption_right}); 
+    }}
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_${name}, (const char *)${name_lower}, MAVLINK_MSG_ID_${name}_MIN_LEN, MAVLINK_MSG_ID_${name}_LEN, MAVLINK_MSG_ID_${name}_CRC);
 #endif
 }
@@ -689,6 +691,7 @@ def generate_one(basename, xml):
             if f.encryption is None:
                 f.encryption = ''
                 f.fpe_encryption = f.name
+                f.encryption_const = 'const'
             else:
                 # f.encryption = ', jaeeuny you are the best lol'       
                 # f.encryption = ', %s' % f.encryption
@@ -696,6 +699,7 @@ def generate_one(basename, xml):
                 f.encryption_fields = encryption_fields
                 f.encryption = ', %s' % f.encryption
                 f.fpe_encryption = f.type+'_fpe_encryption('+ f.name +')'
+                f.encryption_const = ''
         if m.needs_pack:
             m.MAVPACKED_START = "MAVPACKED("
             m.MAVPACKED_END = ")"
