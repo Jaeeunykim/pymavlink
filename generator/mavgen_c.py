@@ -691,7 +691,6 @@ def generate_one(basename, xml):
             if f.encryption is None:
                 f.encryption = ''
                 f.fpe_encryption = f.name
-                f.encryption_const = 'const'
             else:
                 # f.encryption = ', jaeeuny you are the best lol'       
                 # f.encryption = ', %s' % f.encryption
@@ -699,7 +698,6 @@ def generate_one(basename, xml):
                 f.encryption_fields = encryption_fields
                 f.encryption = ', %s' % f.encryption
                 f.fpe_encryption = f.type+'_fpe_encryption('+ f.name +')'
-                f.encryption_const = ''
         if m.needs_pack:
             m.MAVPACKED_START = "MAVPACKED("
             m.MAVPACKED_END = ")"
