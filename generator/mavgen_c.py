@@ -347,7 +347,7 @@ ${{array_fields:    mav_array_memcpy(packet.${name}, ${name}, sizeof(${type})*${
  * @param chan MAVLink channel to send the message
  * @param struct The MAVLink struct to serialize
  */
-static inline void mavlink_msg_${name_lower}_send_struct(mavlink_channel_t chan, const mavlink_${name_lower}_t* ${name_lower})
+static inline void mavlink_msg_${name_lower}_send_struct(mavlink_channel_t chan, ${const} mavlink_${name_lower}_t* ${name_lower})
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     mavlink_msg_${name_lower}_send(chan,${{arg_fields: ${name_lower}->${name},}});
@@ -711,6 +711,7 @@ def generate_one(basename, xml):
         m.array_fields = []
         m.scalar_fields = []
         m.encryption_fields = []
+        m.const='const'
         for f in m.ordered_fields:
             if f.array_length != 0:
                 m.array_fields.append(f)
@@ -719,6 +720,7 @@ def generate_one(basename, xml):
         for f in m.fields:
             if f.encryption:
                 m.encryption_fields.append(f)
+                m.const=''
             if not f.omit_arg:
                 m.arg_fields.append(f)
                 f.putname = f.name
