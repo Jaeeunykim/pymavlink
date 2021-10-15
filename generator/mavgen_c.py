@@ -352,7 +352,7 @@ static inline void mavlink_msg_${name_lower}_send_struct(mavlink_channel_t chan,
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     mavlink_msg_${name_lower}_send(chan,${{arg_fields: ${name_lower}->${name},}});
 #else
-    ${{encryption_fields: ${decode_left}${type}_fpe_encryption(${decode_encryption_right}); 
+    ${{encryption_fields: ${decode_left}${type}_fpe_encryption(${decode_right}); 
     }}
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_${name}, (const char *)${name_lower}, MAVLINK_MSG_ID_${name}_MIN_LEN, MAVLINK_MSG_ID_${name}_LEN, MAVLINK_MSG_ID_${name}_CRC);
 #endif
@@ -411,14 +411,14 @@ static inline ${return_type} mavlink_msg_${name_lower}_get_${name}(const mavlink
 static inline void mavlink_msg_${name_lower}_decode(const mavlink_message_t* msg, mavlink_${name_lower}_t* ${name_lower})
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-${{ordered_fields:    ${decode_left}mavlink_msg_${name_lower}_get_${name}(msg${decode_right});
+${{ordered_fields:    ${decode_left}mavlink_msg_${name_lower}_get_${name}(msg);
 }}
 #else
         uint8_t len = msg->len < MAVLINK_MSG_ID_${name}_LEN? msg->len : MAVLINK_MSG_ID_${name}_LEN;
         memset(${name_lower}, 0, MAVLINK_MSG_ID_${name}_LEN);
     memcpy(${name_lower}, _MAV_PAYLOAD(msg), len);
 #endif
-    ${{encryption_fields: ${decode_left}${type}_fpe_decryption(${decode_encryption_right}); 
+    ${{encryption_fields: ${decode_left}${type}_fpe_decryption(${decode_right}); 
     }}
 }
 ''', m)
@@ -658,7 +658,8 @@ def generate_one(basename, xml):
                 f.array_return_arg = '%s, %u, ' % (f.name, f.array_length)
                 f.array_const = 'const '
                 f.decode_left = ''
-                f.decode_right = ', %s->%s' % (m.name_lower, f.name)
+                f.decode_right=''
+                # f.decode_right = ', %s->%s' % (m.name_lower, f.name)
                 f.return_type = 'uint16_t'
                 f.get_arg = ', %s *%s' % (f.type, f.name)
                 if f.type == 'char':
@@ -675,9 +676,9 @@ def generate_one(basename, xml):
                 f.array_arg = ''
                 f.array_return_arg = ''
                 f.array_const = ''
-                f.decode_encryption_right = "%s->%s" % (m.name_lower, f.name)
+                # f.decode_encryption_right = "%s->%s" % (m.name_lower, f.name)
                 f.decode_left = "%s->%s = " % (m.name_lower, f.name)
-                f.decode_right = ''
+                f.decode_right = "%s->%s" % (m.name_lower, f.name)
                 f.get_arg = ''
                 f.return_type = f.type
                 if f.type == 'char':
