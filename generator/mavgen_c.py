@@ -176,10 +176,10 @@ def generate_message_h(directory, m):
     t.write(f, '''
 #pragma once
 
-${{encryption_fields: extern ${type} ${type}_fpe_encryption(${type} src);
+${{encryption_field_types: extern ${type} ${type}_fpe_encryption(${type} src);
 }}
 
-${{encryption_fields: extern ${type} ${type}_fpe_decryption(${type} src);
+${{encryption_field_types: extern ${type} ${type}_fpe_decryption(${type} src);
 }}
 
 // MESSAGE ${name} PACKING
@@ -659,7 +659,6 @@ def generate_one(basename, xml):
                 f.array_const = 'const '
                 f.decode_left = ''
                 f.decode_right=''
-                # f.decode_right = ', %s->%s' % (m.name_lower, f.name)
                 f.return_type = 'uint16_t'
                 f.get_arg = ', %s *%s' % (f.type, f.name)
                 if f.type == 'char':
@@ -676,7 +675,6 @@ def generate_one(basename, xml):
                 f.array_arg = ''
                 f.array_return_arg = ''
                 f.array_const = ''
-                # f.decode_encryption_right = "%s->%s" % (m.name_lower, f.name)
                 f.decode_left = "%s->%s = " % (m.name_lower, f.name)
                 f.decode_right = "%s->%s" % (m.name_lower, f.name)
                 f.get_arg = ''
@@ -712,6 +710,8 @@ def generate_one(basename, xml):
         m.array_fields = []
         m.scalar_fields = []
         m.encryption_fields = []
+        m.field_type_set = set()
+        m.encryption_field_types= []
         m.const='const'
         for f in m.ordered_fields:
             if f.array_length != 0:
@@ -721,7 +721,10 @@ def generate_one(basename, xml):
         for f in m.fields:
             if f.encryption:
                 m.encryption_fields.append(f)
-                m.const=''
+                m.const=''  
+                if f.type not in m.field_type_set:
+                    m.field_type_set.add(f.type)
+                    m.encryption_field_types.append(f)
             if not f.omit_arg:
                 m.arg_fields.append(f)
                 f.putname = f.name
