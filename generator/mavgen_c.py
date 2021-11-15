@@ -175,15 +175,16 @@ def generate_message_h(directory, m):
     f = open(os.path.join(directory, 'mavlink_msg_%s.h' % m.name_lower), mode='w')
     t.write(f, '''
 #pragma once
-
 ${{encryption_field_types: extern ${type} ${type}_fpe_encryption(${type} src);
+}}
+${{encryption_array_fields: extern void ${type}s_fpe_encryption(${type}* src, size_t size);  
 }}
 
 ${{encryption_field_types: extern ${type} ${type}_fpe_decryption(${type} src);
 }}
-
+${{encryption_array_fields: extern void ${type}s_fpe_decryption(${type}* src, size_t size);
+}}
 // MESSAGE ${name} PACKING
-
 #define MAVLINK_MSG_ID_${name} ${id}
 
 ${MAVPACKED_START}
@@ -233,6 +234,8 @@ ${{arg_fields: * @param ${name} ${units} ${description}
 static inline uint16_t mavlink_msg_${name_lower}_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
                               ${{arg_fields: ${array_const}${type} ${array_prefix}${name},}})
 {
+${{encryption_array_fields:    ${type}s_fpe_encryption(${name}, ${array_length});  
+}}
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_${name}_LEN];
 ${{scalar_fields:    _mav_put_${type}(buf, ${wire_offset}, ${fpe_encryption});
@@ -267,6 +270,8 @@ static inline uint16_t mavlink_msg_${name_lower}_pack_chan(uint8_t system_id, ui
                                mavlink_message_t* msg,
                                    ${{arg_fields:${array_const}${type} ${array_prefix}${name},}})
 {
+${{encryption_array_fields:    ${type}s_fpe_encryption(${name}, ${array_length});  
+}}
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_${name}_LEN];
 ${{scalar_fields:    _mav_put_${type}(buf, ${wire_offset}, ${fpe_encryption});
@@ -325,6 +330,8 @@ ${{arg_fields: * @param ${name} ${units} ${description}
 
 static inline void mavlink_msg_${name_lower}_send(mavlink_channel_t chan,${{arg_fields: ${array_const}${type} ${array_prefix}${name},}})
 {
+${{encryption_array_fields:    ${type}s_fpe_encryption(${name}, ${array_length});  
+}}
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_${name}_LEN];
 ${{scalar_fields:    _mav_put_${type}(buf, ${wire_offset}, ${fpe_encryption});
@@ -354,6 +361,8 @@ static inline void mavlink_msg_${name_lower}_send_struct(mavlink_channel_t chan,
 #else
     ${{encryption_fields: ${decode_left}${type}_fpe_encryption(${decode_right}); 
     }}
+    ${{encryption_array_fields: ${type}s_fpe_encryption(${decode_left}, ${array_length});  
+    }}
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_${name}, (const char *)${name_lower}, MAVLINK_MSG_ID_${name}_MIN_LEN, MAVLINK_MSG_ID_${name}_LEN, MAVLINK_MSG_ID_${name}_CRC);
 #endif
 }
@@ -368,6 +377,8 @@ static inline void mavlink_msg_${name_lower}_send_struct(mavlink_channel_t chan,
  */
 static inline void mavlink_msg_${name_lower}_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, ${{arg_fields: ${array_const}${type} ${array_prefix}${name},}})
 {
+${{encryption_array_fields:    ${type}s_fpe_encryption(${name}, ${array_length});  
+}}
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char *buf = (char *)msgbuf;
 ${{scalar_fields:    _mav_put_${type}(buf, ${wire_offset}, ${fpe_encryption});
@@ -418,8 +429,9 @@ ${{ordered_fields:    ${decode_left}mavlink_msg_${name_lower}_get_${name}(msg);
         memset(${name_lower}, 0, MAVLINK_MSG_ID_${name}_LEN);
     memcpy(${name_lower}, _MAV_PAYLOAD(msg), len);
 #endif
-    ${{encryption_fields: ${decode_left}${type}_fpe_decryption(${decode_right}); 
+    ${{encryption_fields: ${decode_left}${type}_fpe_decryption(${decode_right});
     }}
+    ${{encryption_array_fields: ${type}s_fpe_decryption(${decode_left}, ${array_length});  }} 
 }
 ''', m)
     f.close()
@@ -657,7 +669,7 @@ def generate_one(basename, xml):
                 f.array_arg = ', %u' % f.array_length
                 f.array_return_arg = '%s, %u, ' % (f.name, f.array_length)
                 f.array_const = 'const '
-                f.decode_left = ''
+                f.decode_left = "%s->%s" % (m.name_lower, f.name)
                 f.decode_right=''
                 f.return_type = 'uint16_t'
                 f.get_arg = ', %s *%s' % (f.type, f.name)
@@ -687,6 +699,7 @@ def generate_one(basename, xml):
                     f.c_test_value = "%sLL" % f.test_value                    
                 else:
                     f.c_test_value = f.test_value
+
             if f.encryption is None:
                 f.encryption = ''
                 f.fpe_encryption = f.name
@@ -712,6 +725,7 @@ def generate_one(basename, xml):
         m.encryption_fields = []
         m.field_type_set = set()
         m.encryption_field_types= []
+        m.encryption_array_fields = []
         m.const='const'
         for f in m.ordered_fields:
             if f.array_length != 0:
@@ -719,12 +733,18 @@ def generate_one(basename, xml):
             else:
                 m.scalar_fields.append(f)
         for f in m.fields:
-            if f.encryption:
+            if f.encryption and f.array_length == 0:
                 m.encryption_fields.append(f)
                 m.const=''  
                 if f.type not in m.field_type_set:
                     m.field_type_set.add(f.type)
                     m.encryption_field_types.append(f)
+            
+            if f.encryption and f.array_length != 0:
+                m.const=''
+                m.encryption_array_fields.append(f)
+                
+
             if not f.omit_arg:
                 m.arg_fields.append(f)
                 f.putname = f.name
