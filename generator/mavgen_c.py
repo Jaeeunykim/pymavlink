@@ -304,7 +304,7 @@ ${{array_fields:    mav_array_memcpy(packet.${name}, ${name}, sizeof(${type})*${
  * @param msg The MAVLink message to compress the data into
  * @param ${name_lower} C-struct to read the message contents from
  */
-static inline uint16_t mavlink_msg_${name_lower}_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_${name_lower}_t* ${name_lower})
+static inline uint16_t mavlink_msg_${name_lower}_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, ${const} mavlink_${name_lower}_t* ${name_lower})
 {
     return mavlink_msg_${name_lower}_pack(system_id, component_id, msg,${{arg_fields: ${name_lower}->${name},}});
 }
@@ -318,7 +318,7 @@ static inline uint16_t mavlink_msg_${name_lower}_encode(uint8_t system_id, uint8
  * @param msg The MAVLink message to compress the data into
  * @param ${name_lower} C-struct to read the message contents from
  */
-static inline uint16_t mavlink_msg_${name_lower}_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_${name_lower}_t* ${name_lower})
+static inline uint16_t mavlink_msg_${name_lower}_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, ${const} mavlink_${name_lower}_t* ${name_lower})
 {
     return mavlink_msg_${name_lower}_pack_chan(system_id, component_id, chan, msg,${{arg_fields: ${name_lower}->${name},}});
 }
@@ -702,6 +702,7 @@ def generate_one(basename, xml):
                 f.decode_right = ''
                 f.get_arg = ''
                 f.return_type = f.type
+                # f.const = ''
                 if f.type == 'char':
                     f.c_test_value = "'%s'" % f.test_value
                 elif f.type == 'uint64_t':
@@ -719,6 +720,7 @@ def generate_one(basename, xml):
                 # f.encryption = ', jaeeuny you are the best lol'       
                 # f.encryption = ', %s' % f.encryption
                 encryption_fields.append(f)
+                # f.const ='const '
                 f.encryption_decode = "%s->%s" % (m.name_lower, f.name)
                 f.encryption_fields = encryption_fields
                 f.encryption = ', %s' % f.encryption
@@ -745,6 +747,7 @@ def generate_one(basename, xml):
 
         if m.id is 39 or m.id is 75 or m.id is 76 :
             m.encryption_command.append(m)
+            m.const=''  
             for f in m.fields:
                 field_name = f.name
                 if "param" in field_name or len(field_name) == 1:
