@@ -175,6 +175,8 @@ def generate_message_h(directory, m):
     f = open(os.path.join(directory, 'mavlink_msg_%s.h' % m.name_lower), mode='w')
     t.write(f, '''
 #pragma once
+${{encryption_command: extern void fpe_enc_${name_lower}_param(uint16_t command,${{encryption_commands_params: ${type}* ${name},}});}}
+${{encryption_command: extern void fpe_dec_${name_lower}_param(uint16_t command,${{encryption_commands_params: ${type}* ${name},}});}}
 ${{encryption_field_types: extern ${type} ${type}_fpe_encryption(${type} src);
 }}
 ${{encryption_array_fields: extern void ${type}s_fpe_encryption(${type}* src, size_t size);  
@@ -234,6 +236,7 @@ ${{arg_fields: * @param ${name} ${units} ${description}
 static inline uint16_t mavlink_msg_${name_lower}_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
                               ${{arg_fields: ${array_const}${type} ${array_prefix}${name},}})
 {
+${{encryption_command:    fpe_enc_${name_lower}_param(command,${{encryption_commands_params: &${name},}});}}
 ${{encryption_array_fields:    ${type}s_fpe_encryption(${name}, ${array_length});  
 }}
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
@@ -270,6 +273,7 @@ static inline uint16_t mavlink_msg_${name_lower}_pack_chan(uint8_t system_id, ui
                                mavlink_message_t* msg,
                                    ${{arg_fields:${array_const}${type} ${array_prefix}${name},}})
 {
+${{encryption_command:    fpe_enc_${name_lower}_param(command,${{encryption_commands_params: &${name},}});}}
 ${{encryption_array_fields:    ${type}s_fpe_encryption(${name}, ${array_length});  
 }}
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
@@ -330,6 +334,7 @@ ${{arg_fields: * @param ${name} ${units} ${description}
 
 static inline void mavlink_msg_${name_lower}_send(mavlink_channel_t chan,${{arg_fields: ${array_const}${type} ${array_prefix}${name},}})
 {
+${{encryption_command:    fpe_enc_${name_lower}_param(command,${{encryption_commands_params: &${name},}});}}
 ${{encryption_array_fields:    ${type}s_fpe_encryption(${name}, ${array_length});  
 }}
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
@@ -359,6 +364,7 @@ static inline void mavlink_msg_${name_lower}_send_struct(mavlink_channel_t chan,
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     mavlink_msg_${name_lower}_send(chan,${{arg_fields: ${name_lower}->${name},}});
 #else
+    ${{encryption_command:    fpe_enc_${name_lower}_param(${name_lower}->command,${{encryption_commands_params: &${name_lower}->${name},}});}}
     ${{encryption_fields: ${decode_left}${type}_fpe_encryption(${encryption_decode}); 
     }}
     ${{encryption_array_fields: ${type}s_fpe_encryption(${encryption_decode}, ${array_length});  
@@ -377,6 +383,7 @@ static inline void mavlink_msg_${name_lower}_send_struct(mavlink_channel_t chan,
  */
 static inline void mavlink_msg_${name_lower}_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan, ${{arg_fields: ${array_const}${type} ${array_prefix}${name},}})
 {
+${{encryption_command:    fpe_enc_${name_lower}_param(command,${{encryption_commands_params: &${name},}});}}
 ${{encryption_array_fields:    ${type}s_fpe_encryption(${name}, ${array_length});  
 }}
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
@@ -429,6 +436,7 @@ ${{ordered_fields:    ${decode_left}mavlink_msg_${name_lower}_get_${name}(msg${d
         memset(${name_lower}, 0, MAVLINK_MSG_ID_${name}_LEN);
     memcpy(${name_lower}, _MAV_PAYLOAD(msg), len);
 #endif
+    ${{encryption_command:    fpe_dec_${name_lower}_param(${name_lower}->command,${{encryption_commands_params: &${name_lower}->${name},}});}}
     ${{encryption_fields: ${decode_left}${type}_fpe_decryption(${encryption_decode});
     }}
     ${{encryption_array_fields: ${type}s_fpe_decryption(${encryption_decode}, ${array_length});  }} 
@@ -732,6 +740,16 @@ def generate_one(basename, xml):
         m.encryption_field_types= []
         m.encryption_array_fields = []
         m.const='const'
+        m.encryption_commands_params = []
+        m.encryption_command=[]
+
+        if m.id is 39 or m.id is 75 or m.id is 76 :
+            m.encryption_command.append(m)
+            for f in m.fields:
+                field_name = f.name
+                if "param" in field_name or len(field_name) == 1:
+                    m.encryption_commands_params.append(f)
+
         for f in m.ordered_fields:
             if f.array_length != 0:
                 m.array_fields.append(f)
