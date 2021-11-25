@@ -702,7 +702,6 @@ def generate_one(basename, xml):
                 f.decode_right = ''
                 f.get_arg = ''
                 f.return_type = f.type
-                # f.const = ''
                 if f.type == 'char':
                     f.c_test_value = "'%s'" % f.test_value
                 elif f.type == 'uint64_t':
@@ -720,7 +719,6 @@ def generate_one(basename, xml):
                 # f.encryption = ', jaeeuny you are the best lol'       
                 # f.encryption = ', %s' % f.encryption
                 encryption_fields.append(f)
-                # f.const ='const '
                 f.encryption_decode = "%s->%s" % (m.name_lower, f.name)
                 f.encryption_fields = encryption_fields
                 f.encryption = ', %s' % f.encryption
