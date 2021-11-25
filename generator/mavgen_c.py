@@ -675,6 +675,7 @@ def generate_one(basename, xml):
                 f.get_arg = ', %s *%s' % (f.type, f.name)
                 if f.encryption is not None:
                     f.decode_right = ''
+                    f.array_const = ''
                 if f.type == 'char':
                     f.c_test_value = '"%s"' % f.test_value
                 else:
