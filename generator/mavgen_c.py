@@ -743,7 +743,7 @@ def generate_one(basename, xml):
         m.encryption_commands_params = []
         m.encryption_command=[]
 
-        if m.id is 39 or m.id is 75 or m.id is 76 :
+        if m.id is 39 or m.id is 73 or m.id is 75 or m.id is 76 :
             m.encryption_command.append(m)
             m.const=''  
             for f in m.fields:
